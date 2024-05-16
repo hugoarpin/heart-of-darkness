@@ -2680,7 +2680,7 @@ void Game::displayLoadingScreen() {
 int Game::displayHintScreen(int num, int pause) {
 	static const int kQuitYes = 0;
 	static const int kQuitNo = 1;
-	int quit = kQuitYes;
+	int quit = kQuitNo;
 	bool confirmQuit = false;
 	uint8_t *quitBuffers[] = {
 		_video->_frontLayer,
@@ -2693,6 +2693,8 @@ int Game::displayHintScreen(int num, int pause) {
 			num = 35; // 'Pause' on PSX
 		} else {
 			num = _res->_datHdr.yesNoQuitImage; // 'Yes'
+			// NOTE: _video->_palette is invalid for _datHdr.yesNoQuitImage + 1 ('No'),
+			// it is the one for _datHdr.yesNoQuitImage ('Yes') that has to be set!
 			_res->loadDatHintImage(num + 1, _video->_shadowLayer, _video->_palette); // 'No'
 			confirmQuit = true;
 		}
@@ -2704,18 +2706,18 @@ int Game::displayHintScreen(int num, int pause) {
 			_video->updateYuvDisplay();
 		} else {
 			g_system->setPalette(_video->_palette, 256, 6);
-			g_system->copyRect(0, 0, Video::W, Video::H, _video->_frontLayer, 256);
+			g_system->copyRect(0, 0, Video::W, Video::H, quitBuffers[quit], 256);
 		}
 		g_system->updateScreen(false);
 		do {
 			g_system->processEvents();
 			if (confirmQuit) {
 				const int currentQuit = quit;
-				if (g_system->inp.keyReleased(SYS_INP_LEFT)) {
-					quit = kQuitNo;
-				}
-				if (g_system->inp.keyReleased(SYS_INP_RIGHT)) {
+				if (g_system->inp.keyPressed(SYS_INP_RIGHT)) {
 					quit = kQuitYes;
+				}
+				if (g_system->inp.keyPressed(SYS_INP_LEFT)) {
+					quit = kQuitNo;
 				}
 				if (currentQuit != quit) {
 					g_system->copyRect(0, 0, Video::W, Video::H, quitBuffers[quit], 256);
